@@ -1,1 +1,1 @@
-# 2025-3MA-cidadeconectada-G10
+Sistema de detecção de veículos em sinaleira inteligente com Python e Framework YOLO
