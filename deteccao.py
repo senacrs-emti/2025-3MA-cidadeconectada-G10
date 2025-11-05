@@ -8,7 +8,9 @@ video = cv2.VideoCapture(0)
 video.set(3,1280)
 video.set(4,720)
 
-modelo = YOLO('yolov8x.pt')
+modelo = YOLO('yolov8n.pt')
+#yolov8n (n = nano; mais leve, mas menos acertivo)
+#yolov8x (x; mais pesado, mas mais acertivo)
 
 controleAlarme = False
 
@@ -21,7 +23,7 @@ def alarme():
 
 while True:
     check,img = video.read()
-    # img = cv2.resize(img,(1280,720))
+    img = cv2.resize(img,(1280,720))
 
     resultado = modelo.predict(img,conf=0.5)
 
