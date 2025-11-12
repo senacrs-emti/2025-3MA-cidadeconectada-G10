@@ -3,9 +3,18 @@ import cvzone
 from ultralytics import YOLO
 import winsound
 import threading
+import time
+from pyfirmata2 import Arduino, util
+
+PORT = 'COM4'  # Detecta automaticamente a porta (ex: COM4)
+board = Arduino(PORT)
+
+ledVerde = board.get_pin('d:3:o')
+ledVermelho = board.get_pin('d:6:o')
 
 # Configuração da câmera
-video = cv2.VideoCapture(1)
+video = cv2.VideoCapture(0)
+
 video.set(3,1280)
 video.set(4,720)
 
@@ -14,11 +23,14 @@ modelo = YOLO('yolov8n.pt')
 
 controleAlarme = False
 
+cronometroComCarro = 0
+cronometroSemCarro = 0
+
 def alarme():
     global controleAlarme
     for _ in range(5):
         winsound.Beep(2500, 500)
-    controleAlarme = False
+        controleAlarme = False
 
 while True:
     check, img = video.read()
@@ -37,16 +49,36 @@ while True:
             cls = int(dados.cls[0])
 
             # Caixa e alerta se for veículo (classe 2 = carro)
-            if cls == 2:
+            if cls == 1 or cls == 2 or cls == 3 or cls == 5 or cls == 7 or cls == 17:
+                cronometroComCarro += 1
+                cronometroSemCarro = 0
                 contador_carros += 1
                 cv2.rectangle(img, (x, y), (w, h), (0, 0, 255), 5)
-                cvzone.putTextRect(img, "VEÍCULO IDENTIFICADO", (105, 65), colorR=(0, 0, 255))
                 if not controleAlarme:
                     controleAlarme = True
                     threading.Thread(target=alarme).start()
 
-    # Mostra contador de objetos na tela
-    cvzone.putTextRect(img, f"Objetos detectados: { contador_carros }", (50, 650), scale=2, thickness=2, colorR=(0, 255, 0))
+            if cls != 1 or cls != 2 or cls != 3 or cls != 5 or cls != 7 or cls != 17:
+                cronometroSemCarro += 1
 
+        if contador_carros == 0:
+            cronometroSemCarro += 1
+
+        if cronometroSemCarro >= 20:
+            cronometroComCarro = 0
+        
+        if cronometroComCarro >= 200:
+            cronometroComCarro = 0
+
+    # Mostra contador de objetos na tela
+    cvzone.putTextRect(img, f"Veiculos detectados: { contador_carros }, {cronometroComCarro}", (50, 650), scale=2, thickness=2, colorR=(0, 0, 255))
+    if cronometroComCarro >= 100:
+        cvzone.putTextRect(img, f"Sinaleira aberta", (50, 100), scale=2, thickness=2, colorR=(0, 255, 0))
+        ledVermelho.write(0)
+        ledVerde.write(1)
+    else:
+        cvzone.putTextRect(img, f"Sinaleira fechada", (50, 100), scale=2, thickness=2, colorR=(0, 0, 255))
+        ledVerde.write(0)
+        ledVermelho.write(1)
     cv2.imshow('IMG', img)
     cv2.waitKey(1)
