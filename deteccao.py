@@ -34,9 +34,13 @@ controleAlarme = False
 
 cronometroComCarro = 0
 cronometroSemCarro = 0
+cronometroEmergencia = 0
+cronometroSemEmergencia = 0
 
 cronometroComCarro2 = 0
 cronometroSemCarro2 = 0
+cronometroEmergencia2 = 0
+cronometroSemEmergencia2 = 0
 
 contador_carros = 0
 contador_carros2 = 0
@@ -79,10 +83,26 @@ while True:
                 resultado_emergencial = modelo_emergencial.predict(img, conf=0.5)
 
                 for objetos_emergencial in resultado_emergencial:
+                    obj_emergencial  = objetos_emergencial.boxes
+
+                    for dados in obj_emergencial:
+                        x, y, w, h = dados.xyxy[0]
+                        x, y, w, h = int(x), int(y), int(w), int(h)
+                        cls = int(dados.cls[0])
+
+                        if cls == 0 or cls == 1 or cls == 2:
+                            cv2.rectangle(img, (x, y), (w, h), (255, 0, 0), 5)
+                            cronometroEmergencia += 1
+
+                        else:
+                            cronometroSemEmergencia += 1
                 
 
         if contador_carros == 0:
             cronometroSemCarro += 1
+        
+        if cronometroSemEmergencia >= 20:
+            cronometroEmergencia = 0
 
         if cronometroSemCarro >= 20:
             cronometroComCarro = 0
@@ -92,7 +112,7 @@ while True:
             cronometroComCarro = 0
 
     #cvzone.putTextRect(img, f"Veiculos detectados: { contador_carros }, {cronometroComCarro}", (50, 100), scale=2, thickness=2, colorR=(0, 0, 255))
-    if ( cronometroComCarro >= 15 and sinaleiraEsquerda == False) or (cronometroSemCarro2 >=20 and contador_carros >=1):
+    if ( cronometroComCarro >= 15 and sinaleiraEsquerda == False) or (cronometroSemCarro2 >=20 and contador_carros >=1) or cronometroEmergencia >= 20:
         cvzone.putTextRect(img, f"Sinaleira aberta", (50, 50), scale=2, thickness=2, colorR=(0, 255, 0))
         ledVermelho.write(0)
         ledVerde.write(1)
@@ -131,8 +151,28 @@ while True:
                     controleAlarme = True
                     threading.Thread(target=alarme).start()
 
+                resultado_emergencial2 = modelo_emergencial.predict(img2, conf=0.5)
+
+                for objetos_emergencial in resultado_emergencial2:
+                    obj_emergencial  = objetos_emergencial.boxes
+
+                    for dados in obj_emergencial:
+                        x, y, w, h = dados.xyxy[0]
+                        x, y, w, h = int(x), int(y), int(w), int(h)
+                        cls = int(dados.cls[0])
+
+                        if cls == 0 or cls == 1 or cls == 2:
+                            cv2.rectangle(img2, (x, y), (w, h), (255, 0, 0), 5)
+                            cronometroEmergencia2 += 1
+
+                        else:
+                            cronometroSemEmergencia2 += 1
+
         if contador_carros2 == 0:
             cronometroSemCarro2 += 1
+
+        if cronometroSemEmergencia2 >= 20:
+            cronometroEmergencia2 = 0
 
         if cronometroSemCarro2 >= 20:
             cronometroComCarro2 = 0
@@ -143,7 +183,7 @@ while True:
 
     # Mostra contador de objetos na tela
     #cvzone.putTextRect(img2, f"Veiculos detectados: { contador_carros2 }, {cronometroComCarro2}", (50, 100), scale=2, thickness=2, colorR=(0, 0, 255))
-    if (cronometroComCarro2 >= 15 and sinaleiraDireira == False) or (cronometroSemCarro >=20 and contador_carros2 >= 1):
+    if (cronometroComCarro2 >= 15 and sinaleiraDireira == False) or (cronometroSemCarro >=20 and contador_carros2 >= 1) or cronometroEmergencia2 >= 20:
         cvzone.putTextRect(img2, f"Sinaleira aberta", (50, 50), scale=2, thickness=2, colorR=(0, 255, 0))
         ledVermelho2.write(0)
         ledVerde2.write(1)
